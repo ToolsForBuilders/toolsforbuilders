@@ -103,11 +103,24 @@ document.getElementById('f').addEventListener('submit', async ev => {
   const btn = document.getElementById('go'), out = document.getElementById('out');
   btn.disabled = true; btn.textContent = 'A verificar…';
   out.innerHTML = '<div class="card hint">A extrair afirmações, pesquisar fontes e cruzar informação…</div>';
-  try {
-    const res = await fetch('/api/check', { method: 'POST', body: fd });
-    const data = await res.json();
+  const readJson = async res => {
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || res.statusText);
-    out.innerHTML = render(data);
+    return data;
+  };
+  try {
+    const { job_id } = await readJson(await fetch('/api/check', { method: 'POST', body: fd }));
+    const started = Date.now();
+    for (;;) {
+      await new Promise(r => setTimeout(r, 4000));
+      let job;
+      try { job = await readJson(await fetch('/api/jobs/' + encodeURIComponent(job_id))); }
+      catch (e) { if (/fetch|network/i.test(e.message)) continue; throw e; }  // rede instável no telemóvel: tenta de novo
+      if (job.status === 'done') { out.innerHTML = render(job.result); break; }
+      if (job.status === 'error') throw new Error(job.error);
+      const secs = Math.round((Date.now() - started) / 1000);
+      out.innerHTML = `<div class="card hint">${esc(job.stage)} (${secs}s)</div>`;
+    }
   } catch (e) {
     out.innerHTML = `<div class="card err">Erro: ${esc(e.message)}</div>`;
   } finally { btn.disabled = false; btn.textContent = 'Verificar'; }

@@ -1,0 +1,23 @@
+# Blueprint do Render para publicar o polígrafo com senha.
+# Guia: polygrafo/README.md, secção "Publicar online (privado)".
+services:
+  - type: web
+    name: polygrafo
+    runtime: python
+    rootDir: polygrafo
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn polygrafo.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: POLYGRAFO_REQUIRE_PASSWORD
+        value: "1"
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: POLYGRAFO_PASSWORD
+        sync: false
+      - key: GOOGLE_FACTCHECK_API_KEY
+        sync: false

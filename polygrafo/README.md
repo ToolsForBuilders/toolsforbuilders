@@ -74,6 +74,50 @@ python cli.py --image captura.png --json
 `POST /api/check` (multipart: `url`, `text`, `image`) devolve o relatório em JSON.
 `POST /api/extract` (`url`) só mostra o que foi possível ler da publicação.
 
+## Publicar online (privado, com senha)
+
+A app pode ser alojada no [Render](https://render.com) com o ficheiro `render.yaml`
+que está na raiz do repositório. Todas as páginas e pedidos exigem utilizador e senha
+(HTTP Basic sobre HTTPS). Se a senha não estiver configurada, a app recusa todos os
+pedidos, por isso nunca fica aberta por engano.
+
+**1. Chave da Claude API**
+1. Entre em <https://console.anthropic.com> e carregue créditos. A API é paga à parte
+   da subscrição do Claude.
+2. Em *Settings → Limits*, defina um limite de gastos mensal.
+3. Em *API Keys*, crie uma chave e copie-a.
+
+**2. Render**
+1. Crie uma conta em <https://render.com> com a opção *GitHub*.
+2. Escolha *New → Blueprint* e selecione o repositório `toolsforbuilders`. Use o ramo
+   onde está o polígrafo: o `main`, depois do merge do PR.
+3. Preencha as variáveis pedidas:
+   - `ANTHROPIC_API_KEY`: a chave do passo 1.
+   - `POLYGRAFO_PASSWORD`: uma senha com pelo menos 12 caracteres.
+   - `GOOGLE_FACTCHECK_API_KEY`: opcional, pode ficar vazia.
+4. Confirme e aguarde a instalação, que demora alguns minutos. O Render mostra o
+   endereço da app, por exemplo `https://polygrafo-xxxx.onrender.com`.
+
+**3. Usar**
+Abra o endereço no browser (também funciona no telemóvel). Quando for pedido, entre
+com o utilizador `eu` e a senha que definiu. Pode mudar o utilizador com a variável
+`POLYGRAFO_USER`.
+
+**Limitações do plano gratuito do Render:**
+- O serviço adormece após 15 minutos sem uso. A primeira visita depois disso demora
+  cerca de um minuto a acordar.
+- Há 750 horas de instância gratuitas por mês.
+- Se o serviço reiniciar ou adormecer a meio de uma análise, essa análise perde-se e
+  tem de ser repetida.
+- O TikTok e o Instagram bloqueiam com frequência pedidos vindos de servidores. Nesse
+  caso, cole o texto da publicação ou envie uma captura de ecrã.
+
+**Segurança:**
+- Após 5 senhas erradas, o IP fica bloqueado durante 15 minutos.
+- As chaves e a senha ficam guardadas só nas variáveis do Render, nunca no código.
+- Se o repositório for público, o código-fonte fica visível para qualquer pessoa, mas
+  sem chaves nem senhas.
+
 ## Como é calculado o score
 
 O modelo de linguagem **não escolhe o número**. Para cada fonte, o modelo indica apenas a
@@ -143,11 +187,12 @@ atuais da IFCN em <https://ifcncodeofprinciples.poynter.org/signatories>.
 ## Testes
 
 ```bash
-pip install pytest
+pip install pytest httpx
 python -m pytest -q
 ```
 
-Os testes cobrem o score, a classificação de fontes, a extração Open Graph e a
+Os testes cobrem o score, a classificação de fontes, a extração Open Graph, a
+proteção por senha, as análises em segundo plano e a
 orquestração. Esta última usa um cliente falso, sem chamadas reais à API.
 
 ## Próximos passos possíveis
